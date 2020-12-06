@@ -1,9 +1,19 @@
 package teal
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestSnapshotManager(t *testing.T) {
-	got := "bad bad"
+	m := NewMemorySegment()
+	//m.AllocateAt(0, NewUInt(23))
+	fmt.Print(m)
+	m.Compact()
+	fmt.Print(m)
+	m.AllocateAt(3, NewUInt(11))
+	fmt.Print(m)
+	got := "good good"
 	want := "good good"
 	check(got, want, t)
 }
