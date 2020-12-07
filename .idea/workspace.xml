@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9bd0ecc2-16f7-4a3e-9c1b-bb272fa05d3e" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/teal/memory.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/memory.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/teal/memory_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/memory_test.go" afterDir="false" />

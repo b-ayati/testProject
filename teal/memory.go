@@ -16,7 +16,7 @@ func NewMemorySegment(size int) *MemorySegment {
 
 func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
 	if index < 0 || index >= ms.maxSize {
-		return &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize}
+		return &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize - 1}
 	}
 	if index >= len(ms.segment) {
 		ms.expand()
@@ -41,7 +41,7 @@ func (ms *MemorySegment) Free(index int) {
 
 func (ms *MemorySegment) Get(index int) (DataType, error) {
 	if index < 0 || index >= ms.maxSize {
-		return nil, &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize}
+		return nil, &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize - 1}
 	}
 	if index >= len(ms.segment) || ms.segment[index] == nil {
 		return nil, fmt.Errorf("memory unit at %d is empty", index)
@@ -73,9 +73,7 @@ func (ms *MemorySegment) expand() {
 		panic("We can not expand while there is a saved snapshot!")
 	}
 	newSegment := make([]DataType, ms.maxSize)
-	for i, d := range ms.segment {
-		newSegment[i] = d
-	}
+	copy(newSegment, ms.segment)
 	ms.segment = newSegment
 }
 
@@ -88,19 +86,14 @@ func (ms *MemorySegment) Compact() {
 	for ; last >= 0 && ms.segment[last] == nil; last-- {
 	}
 	newSegment := make([]DataType, last+1)
-	for i := range newSegment {
-		newSegment[i] = ms.segment[i]
-	}
+	copy(newSegment, ms.segment)
 	ms.segment = newSegment
 }
 
 func (ms *MemorySegment) String() string {
 	str := fmt.Sprintf("Memory Segment: (maxSize:%d)", ms.maxSize)
 	for i, data := range ms.segment {
-		str += fmt.Sprintf("\n[%d, %T]", i, data)
-		if data != nil {
-			str += fmt.Sprintf("--->%v", data)
-		}
+		str += fmt.Sprintf("\n[%d, %T)]--->%v", i, data, data)
 	}
 	str += fmt.Sprintf("\nsavedSnapshots:%v\n", ms.snapManager.savedSnapshots)
 	return str + "============================\n"
@@ -124,12 +117,20 @@ func (sm *snapshotManager) restoreSnapshot() {
 	}
 	for pointer, value := range sm.savedSnapshots {
 		switch p := pointer.(type) {
+		case *DataType:
+			if value == nil {
+				*p = nil
+			} else {
+				*p = value.(DataType)
+			}
 		case *uint64:
 			*p = value.(uint64)
 		case *byte:
 			*p = value.(byte)
 		case *bool:
 			*p = value.(bool)
+		case *float64:
+			*p = value.(float64)
 		default:
 			panic("It seems that you are trying to add a new teal.DataType but you forgot to change this function!")
 		}

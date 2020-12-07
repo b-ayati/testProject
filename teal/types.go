@@ -1,10 +1,12 @@
 package teal
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 type DataType interface {
 	setSnapshotManager(*snapshotManager)
-	//String() string
 }
 
 type UInt struct {
@@ -31,10 +33,58 @@ func (i *UInt) SetValue(value uint64) {
 	i.value = value
 }
 
-/*
-func (i *UInt) String() string {
-	return fmt.Sprintf("TealUInt: %d", i.value)
-}*/
+type ConstByteArray struct {
+	values []byte
+}
+
+func NewConstByteArray(b []byte) *ConstByteArray {
+	temp := make([]byte, len(b))
+	copy(b, temp)
+	return &ConstByteArray{values: temp}
+}
+
+func (cba *ConstByteArray) setSnapshotManager(sm *snapshotManager) {
+	//do nothing!
+}
+
+func (cba *ConstByteArray) Get(i int) (byte, *OutOfRangeError) {
+	if l := len(cba.values); i < 0 || i >= l {
+		return 0, &OutOfRangeError{value: i, lowerBound: 0, higherBound: l - 1}
+	}
+	return cba.values[i], nil
+}
+
+func (cba *ConstByteArray) EqualsToSlice(b []byte) bool {
+	return bytes.Equal(cba.values, b)
+}
+
+func (cba *ConstByteArray) Equals(other *ConstByteArray) bool {
+	return bytes.Equal(cba.values, other.values)
+}
+
+type ByteArray struct {
+	ConstByteArray
+	manager *snapshotManager
+}
+
+func NewByteArray(size int) *ByteArray {
+	return &ByteArray{ConstByteArray: ConstByteArray{values: make([]byte, size)}}
+}
+
+func (ba *ByteArray) setSnapshotManager(sm *snapshotManager) {
+	ba.manager = sm
+}
+
+func (ba *ByteArray) Set(i int, b byte) *OutOfRangeError {
+	if l := len(ba.values); i < 0 || i >= l {
+		return &OutOfRangeError{value: i, lowerBound: 0, higherBound: l - 1}
+	}
+	if ba.manager != nil {
+		ba.manager.notifyUpdate(&ba.values[i], ba.values[i])
+	}
+	ba.values[i] = b
+	return nil
+}
 
 //OutOfRangeError is an error type indicating that some integer value is out of its valid range.
 type OutOfRangeError struct {

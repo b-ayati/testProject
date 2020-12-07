@@ -6,12 +6,20 @@ import (
 )
 
 func main() {
-	var arr [3]teal.DataType
-	arr[0] = teal.NewUInt(5)
-	fmt.Printf("%v", arr)
-	if arr[1] == nil {
-		println("hi")
-	}
+	m := make(map[*interface{}]interface{})
+	//var i int = 6
+	var x, y interface{} = 3, 4
+	var p *interface{}
+	m[&x] = x
+	m[&y] = y
+	p = &x
+	fmt.Printf("%v", x)
+	*p = 10.7
+	fmt.Printf("%v", x)
+
+	var cb *teal.ConstByteArray = teal.NewConstByteArray([]byte{})
+	res := cb.Equals(teal.NewConstByteArray([]byte{}))
+	println(res)
 
 	/*
 		x := teal.NewUInt(25)
