@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	var arr [3]teal.DataType
 	arr[0] = teal.NewUInt(5)
 	fmt.Printf("%v", arr)

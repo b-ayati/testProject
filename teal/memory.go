@@ -4,80 +4,49 @@ import (
 	"fmt"
 )
 
-const (
-	InitialSize     = 10
-	ExpansionFactor = 4
-)
-
 type MemorySegment struct {
 	segment     []DataType
 	snapManager snapshotManager
+	maxSize     int
 }
 
-func NewMemorySegment() *MemorySegment {
-	return &MemorySegment{segment: make([]DataType, InitialSize)}
+func NewMemorySegment(size int) *MemorySegment {
+	return &MemorySegment{maxSize: size, segment: make([]DataType, size)}
 }
 
-func (ms *MemorySegment) AllocateAt(index int, item DataType) {
+func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
+	if index < 0 || index >= ms.maxSize {
+		return &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize}
+	}
 	if index >= len(ms.segment) {
-		ms.Expand(ExpansionFactor)
+		ms.expand()
 	}
 	if ms.segment[index] != nil {
-		panic("Memory unit at ... is not empty.")
+		return fmt.Errorf("memory unit at %d is not empty", index)
 	}
-	item.setSnapshotManager(&ms.snapManager)
+	//we need to notify our snapshot manager about change in segment[]
 	ms.snapManager.notifyUpdate(&ms.segment[index], ms.segment[index])
+	//adding item
+	item.setSnapshotManager(&ms.snapManager)
 	ms.segment[index] = item
-}
-
-func (ms *MemorySegment) Expand(factor float32) {
-	newSize := int(1 + float32(len(ms.segment))*(1+factor))
-	newSegment := make([]DataType, newSize)
-
-	snapshots := ms.snapManager.savedSnapshots
-	if len(snapshots) > 0 {
-		for i := range ms.segment {
-			if oldValue, exists := snapshots[&ms.segment[i]]; exists {
-				snapshots[&newSegment[i]] = oldValue
-				delete(snapshots, &ms.segment[i])
-			}
-		}
-	}
-
-	for i, d := range ms.segment {
-		newSegment[i] = d
-	}
-
-	ms.segment = newSegment
-}
-
-func (ms *MemorySegment) Compact() {
-	if len(ms.snapManager.savedSnapshots) > 0 {
-		return
-	}
-	last := len(ms.segment) - 1
-	for ; last >= 0 && ms.segment[last] == nil; last-- {
-	}
-	println(last)
-
-	newSegment := make([]DataType, last+1)
-	for i := range newSegment {
-		newSegment[i] = ms.segment[i]
-	}
-	ms.segment = newSegment
+	return nil
 }
 
 func (ms *MemorySegment) Free(index int) {
+	//we need to notify our snapshot manager about change in segment[]
 	ms.snapManager.notifyUpdate(&ms.segment[index], ms.segment[index])
+	//removing item
 	ms.segment[index] = nil
 }
 
-func (ms *MemorySegment) Get(index int) DataType {
-	if d := ms.segment[index]; d != nil {
-		return d
-	} else {
-		panic("segmentation fault!")
+func (ms *MemorySegment) Get(index int) (DataType, error) {
+	if index < 0 || index >= ms.maxSize {
+		return nil, &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize}
 	}
+	if index >= len(ms.segment) || ms.segment[index] == nil {
+		return nil, fmt.Errorf("memory unit at %d is empty", index)
+	}
+	return ms.segment[index], nil
 }
 
 func (ms *MemorySegment) SaveSnapshot() {
@@ -87,14 +56,54 @@ func (ms *MemorySegment) SaveSnapshot() {
 //DiscardSnapshot stops the MemorySegment from
 func (ms *MemorySegment) DiscardSnapshot() {
 	ms.snapManager.turnOff()
+	ms.Compact()
 }
 
 func (ms *MemorySegment) RestoreSnapshot() {
 	ms.snapManager.restoreSnapshot()
+	//we don't need the old snapshot anymore, so we reset snapManager to improve performance of MemorySegment
+	ms.snapManager.reset()
+}
+
+func (ms *MemorySegment) expand() {
+	if len(ms.segment) == ms.maxSize {
+		return
+	}
+	if len(ms.snapManager.savedSnapshots) > 0 {
+		panic("We can not expand while there is a saved snapshot!")
+	}
+	newSegment := make([]DataType, ms.maxSize)
+	for i, d := range ms.segment {
+		newSegment[i] = d
+	}
+	ms.segment = newSegment
+}
+
+func (ms *MemorySegment) Compact() {
+	if len(ms.snapManager.savedSnapshots) > 0 {
+		return
+	}
+	//we need to find last element like this cuz we have a Free() function which can remove elements
+	last := len(ms.segment) - 1
+	for ; last >= 0 && ms.segment[last] == nil; last-- {
+	}
+	newSegment := make([]DataType, last+1)
+	for i := range newSegment {
+		newSegment[i] = ms.segment[i]
+	}
+	ms.segment = newSegment
 }
 
 func (ms *MemorySegment) String() string {
-	return fmt.Sprintf("memory:%v\nsnapshots:%v\n", ms.segment, ms.snapManager.savedSnapshots)
+	str := fmt.Sprintf("Memory Segment: (maxSize:%d)", ms.maxSize)
+	for i, data := range ms.segment {
+		str += fmt.Sprintf("\n[%d, %T]", i, data)
+		if data != nil {
+			str += fmt.Sprintf("--->%v", data)
+		}
+	}
+	str += fmt.Sprintf("\nsavedSnapshots:%v\n", ms.snapManager.savedSnapshots)
+	return str + "============================\n"
 }
 
 type snapshotManager struct {

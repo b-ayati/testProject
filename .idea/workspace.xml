@@ -2,13 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9bd0ecc2-16f7-4a3e-9c1b-bb272fa05d3e" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/testProject.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main/teal/teal.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/teal/memory.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/memory.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/teal/memory_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/memory_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/teal/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/types.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,7 +93,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="initial commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="initial commit" />
+    <MESSAGE value="messy commit" />
+    <option name="LAST_COMMIT_MESSAGE" value="messy commit" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
