@@ -1,7 +1,13 @@
 package teal
 
 import (
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrCellNotEmpty = errors.New("memory cell is not empty")
+	ErrCellIsEmpty  = errors.New("memory cell is empty")
 )
 
 type MemorySegment struct {
@@ -16,13 +22,13 @@ func NewMemorySegment(size int) *MemorySegment {
 
 func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
 	if index < 0 || index >= ms.maxSize {
-		return &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize - 1}
+		return &OutOfBoundsError{Value: index, LowerBound: 0, HigherBound: ms.maxSize - 1}
 	}
 	if index >= len(ms.segment) {
 		ms.expand()
 	}
 	if ms.segment[index] != nil {
-		return fmt.Errorf("memory unit at %d is not empty", index)
+		return ErrCellNotEmpty
 	}
 	//we need to notify our snapshot manager about change in segment[]
 	ms.snapManager.notifyUpdate(&ms.segment[index], ms.segment[index])
@@ -32,31 +38,37 @@ func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
 	return nil
 }
 
-func (ms *MemorySegment) Free(index int) {
+func (ms *MemorySegment) Delete(index int) error {
+	//if Get(index) returns an error we will return an error too
+	if _, err := ms.Get(index); err != nil {
+		return err
+	}
 	//we need to notify our snapshot manager about change in segment[]
 	ms.snapManager.notifyUpdate(&ms.segment[index], ms.segment[index])
 	//removing item
 	ms.segment[index] = nil
+	return nil
 }
 
 func (ms *MemorySegment) Get(index int) (DataType, error) {
 	if index < 0 || index >= ms.maxSize {
-		return nil, &OutOfRangeError{value: index, lowerBound: 0, higherBound: ms.maxSize - 1}
+		return nil, &OutOfBoundsError{Value: index, LowerBound: 0, HigherBound: ms.maxSize - 1}
 	}
 	if index >= len(ms.segment) || ms.segment[index] == nil {
-		return nil, fmt.Errorf("memory unit at %d is empty", index)
+		return nil, ErrCellIsEmpty
 	}
 	return ms.segment[index], nil
 }
 
 func (ms *MemorySegment) SaveSnapshot() {
 	ms.snapManager.reset()
+	ms.expand()
 }
 
 //DiscardSnapshot stops the MemorySegment from
 func (ms *MemorySegment) DiscardSnapshot() {
 	ms.snapManager.turnOff()
-	ms.Compact()
+	ms.compact()
 }
 
 func (ms *MemorySegment) RestoreSnapshot() {
@@ -77,11 +89,12 @@ func (ms *MemorySegment) expand() {
 	ms.segment = newSegment
 }
 
-func (ms *MemorySegment) Compact() {
+func (ms *MemorySegment) compact() {
+	//when we have a saved snapshot compact does nothing
 	if len(ms.snapManager.savedSnapshots) > 0 {
 		return
 	}
-	//we need to find last element like this cuz we have a Free() function which can remove elements
+	//we need to find last element like this cuz we have a Delete() function which can remove elements
 	last := len(ms.segment) - 1
 	for ; last >= 0 && ms.segment[last] == nil; last-- {
 	}
@@ -90,13 +103,21 @@ func (ms *MemorySegment) Compact() {
 	ms.segment = newSegment
 }
 
+func (ms *MemorySegment) Dump() string {
+	str := fmt.Sprintf("Memory Segment: (maxSize:%d)", ms.maxSize)
+	for i, data := range ms.segment {
+		str += fmt.Sprintf("\n[%d, %T)]--->%v", i, data, data)
+	}
+	str += fmt.Sprintf("\nSaved Snapshots:%v", &ms.snapManager)
+	return str
+}
+
 func (ms *MemorySegment) String() string {
 	str := fmt.Sprintf("Memory Segment: (maxSize:%d)", ms.maxSize)
 	for i, data := range ms.segment {
 		str += fmt.Sprintf("\n[%d, %T)]--->%v", i, data, data)
 	}
-	str += fmt.Sprintf("\nsavedSnapshots:%v\n", ms.snapManager.savedSnapshots)
-	return str + "============================\n"
+	return str
 }
 
 type snapshotManager struct {
@@ -125,6 +146,8 @@ func (sm *snapshotManager) restoreSnapshot() {
 			}
 		case *uint64:
 			*p = value.(uint64)
+		case *int64:
+			*p = value.(int64)
 		case *byte:
 			*p = value.(byte)
 		case *bool:
@@ -144,7 +167,16 @@ func (sm *snapshotManager) notifyUpdate(pointer interface{}, oldValue interface{
 	}
 	if _, exists := sm.savedSnapshots[pointer]; !exists {
 		sm.savedSnapshots[pointer] = oldValue
-	} else {
-		println("we have", pointer, oldValue)
 	}
+}
+
+func (sm *snapshotManager) String() string {
+	if sm.savedSnapshots == nil {
+		return "<nil>"
+	}
+	str := "["
+	for _, v := range sm.savedSnapshots {
+		str += fmt.Sprintf("(%T %v)", v, v)
+	}
+	return str + "]"
 }

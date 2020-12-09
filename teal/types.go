@@ -7,6 +7,7 @@ import (
 
 type DataType interface {
 	setSnapshotManager(*snapshotManager)
+	String() string
 }
 
 type UInt struct {
@@ -33,6 +34,10 @@ func (i *UInt) SetValue(value uint64) {
 	i.value = value
 }
 
+func (i *UInt) String() string {
+	return fmt.Sprint(i.value)
+}
+
 type ConstByteArray struct {
 	values []byte
 }
@@ -43,13 +48,13 @@ func NewConstByteArray(b []byte) *ConstByteArray {
 	return &ConstByteArray{values: temp}
 }
 
-func (cba *ConstByteArray) setSnapshotManager(sm *snapshotManager) {
+func (cba *ConstByteArray) setSnapshotManager(*snapshotManager) {
 	//do nothing!
 }
 
-func (cba *ConstByteArray) Get(i int) (byte, *OutOfRangeError) {
+func (cba *ConstByteArray) Get(i int) (byte, *OutOfBoundsError) {
 	if l := len(cba.values); i < 0 || i >= l {
-		return 0, &OutOfRangeError{value: i, lowerBound: 0, higherBound: l - 1}
+		return 0, &OutOfBoundsError{Value: i, LowerBound: 0, HigherBound: l - 1}
 	}
 	return cba.values[i], nil
 }
@@ -60,6 +65,10 @@ func (cba *ConstByteArray) EqualsToSlice(b []byte) bool {
 
 func (cba *ConstByteArray) Equals(other *ConstByteArray) bool {
 	return bytes.Equal(cba.values, other.values)
+}
+
+func (cba *ConstByteArray) String() string {
+	return fmt.Sprint(cba.values)
 }
 
 type ByteArray struct {
@@ -75,9 +84,9 @@ func (ba *ByteArray) setSnapshotManager(sm *snapshotManager) {
 	ba.manager = sm
 }
 
-func (ba *ByteArray) Set(i int, b byte) *OutOfRangeError {
+func (ba *ByteArray) Set(i int, b byte) *OutOfBoundsError {
 	if l := len(ba.values); i < 0 || i >= l {
-		return &OutOfRangeError{value: i, lowerBound: 0, higherBound: l - 1}
+		return &OutOfBoundsError{Value: i, LowerBound: 0, HigherBound: l - 1}
 	}
 	if ba.manager != nil {
 		ba.manager.notifyUpdate(&ba.values[i], ba.values[i])
@@ -86,13 +95,13 @@ func (ba *ByteArray) Set(i int, b byte) *OutOfRangeError {
 	return nil
 }
 
-//OutOfRangeError is an error type indicating that some integer value is out of its valid range.
-type OutOfRangeError struct {
-	value       int
-	lowerBound  int
-	higherBound int
+//OutOfBoundsError is an error type indicating that some integer value is out of its valid range.
+type OutOfBoundsError struct {
+	Value       int
+	LowerBound  int
+	HigherBound int
 }
 
-func (orErr *OutOfRangeError) Error() string {
-	return fmt.Sprintf("%d is out of range. it must be between %d and %d", orErr.value, orErr.lowerBound, orErr.higherBound)
+func (orErr *OutOfBoundsError) Error() string {
+	return fmt.Sprintf("out of bounds: %d is not between %d and %d", orErr.Value, orErr.LowerBound, orErr.HigherBound)
 }
