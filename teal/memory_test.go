@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+//TODO: add more tests
 const DebugMode = false
 
 func TestMemorySegment_Snapshot(t *testing.T) {
@@ -65,6 +66,7 @@ func TestMemorySegment_Snapshot(t *testing.T) {
 			barr.Set(0, 5)
 			barr.Set(2, 6)
 			barr.Set(2, 10)
+			m.compact()
 			i, _ := m.Get(2)
 			i.(*UInt).SetValue(45)
 			m.Delete(2)

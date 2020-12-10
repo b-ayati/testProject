@@ -1,26 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"testProject/teal"
 )
 
 func main() {
-	m := make(map[*interface{}]interface{})
-	//var i int = 6
-	var x, y interface{} = 3, 4
-	var p *interface{}
-	m[&x] = x
-	m[&y] = y
-	p = &x
-	fmt.Printf("%v", x)
-	*p = 10.7
-	fmt.Printf("%v", x)
-
 	var cb *teal.ConstByteArray = teal.NewConstByteArray([]byte{})
 	res := cb.Equals(teal.NewConstByteArray([]byte{}))
 	println(res)
 
+	m := teal.NewMemorySegment(5)
+	m.SaveSnapshot()
+	m.DiscardSnapshot()
 	/*
 		x := teal.NewUInt(25)
 		y := teal.NewUInt(23)

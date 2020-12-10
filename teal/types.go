@@ -1,3 +1,9 @@
+// Package teal provides essential data types and tools for executing TEAL scripts.
+// currently it supports following data types:
+//
+// UInt				representing an uint64
+// ConstByteArray	representing an immutable fixed size []byte
+// ByteArray		representing a fixed size []byte
 package teal
 
 import (

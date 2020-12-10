@@ -12,7 +12,18 @@ var (
 
 // MemorySegment represents a fixed size segment of a random access memory which its starting address is 0.
 // Every address can either be empty or contain a teal.DataType.
-// By calling SaveSnapshot() MemorySegment can save a snapshot of its state which can later be restored by calling RestoreSnapshot().
+//
+// MemorySegment is able to  save a snapshot of its state which can later be restored by calling RestoreSnapshot.
+// After calling SaveSnapshot memory and runtime overhead of MemorySegment increases, calling DiscardSnapshot will re-optimize MemorySegment again.
+//
+// Example Usage:
+//		m := teal.NewMemorySegment(schemaSize)
+//		m.SaveSnapshot()
+//		err := runContract()
+//		if err != nil {
+//			m.RestoreSnapshot()
+//		}
+//		m.DiscardSnapshot()
 type MemorySegment struct {
 	segment     []DataType
 	snapManager snapshotManager
@@ -24,7 +35,7 @@ func NewMemorySegment(size int) *MemorySegment {
 	return &MemorySegment{maxSize: size, segment: make([]DataType, size)}
 }
 
-// AllocateAt puts item at the specified position by index. If that position is not empty it will return an error.
+// AllocateAt puts "item" at the specified position by "index". If that position is not empty it will return an error.
 // If the MemorySegment is compacted and the index is outside of the compacted memory, AllocateAt will
 // try to expand the MemorySegment.
 func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
@@ -61,7 +72,8 @@ func (ms *MemorySegment) Delete(index int) error {
 	return nil
 }
 
-// Get retrieves the data stored at the memory position specified by index.
+// Get retrieves the data stored at the memory position specified by index. it returns an error if that memory
+// location is empty
 func (ms *MemorySegment) Get(index int) (DataType, error) {
 	if index < 0 || index >= ms.maxSize {
 		return nil, &OutOfBoundsError{Value: index, LowerBound: 0, HigherBound: ms.maxSize - 1}
@@ -72,20 +84,23 @@ func (ms *MemorySegment) Get(index int) (DataType, error) {
 	return ms.segment[index], nil
 }
 
-// SaveSnapshot saves a snapshot of the current state of MemorySegment. if the MemorySegment is compacted it will
+// SaveSnapshot saves a snapshot of the current state of MemorySegment. If the MemorySegment is compacted it will
 // expand it to its original size. After calling SaveSnapshot the memory usage of MemorySegment increases
-// and updating
+// and updating any data will have an extra overhead.
 func (ms *MemorySegment) SaveSnapshot() {
 	ms.snapManager.reset()
+	//we'd better call expand() here. otherwise AllocateAt may fail if the memory is updated.
 	ms.expand()
 }
 
-// DiscardSnapshot stops the MemorySegment from
+// DiscardSnapshot discards any snapshots saved in MemorySegment. It also compacts MemorySegment to optimize its memory
+// usage.
 func (ms *MemorySegment) DiscardSnapshot() {
 	ms.snapManager.turnOff()
 	ms.compact()
 }
 
+// RestoreSnapshot restores a previously saved snapshot.
 func (ms *MemorySegment) RestoreSnapshot() {
 	ms.snapManager.restoreSnapshot()
 	//we don't need the old snapshot anymore, so we reset snapManager to improve performance of MemorySegment
