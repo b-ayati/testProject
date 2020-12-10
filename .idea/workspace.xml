@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="9bd0ecc2-16f7-4a3e-9c1b-bb272fa05d3e" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/main/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main/main.go" afterDir="false" />
+    <list default="true" id="9bd0ecc2-16f7-4a3e-9c1b-bb272fa05d3e" name="Default Changelist" comment="latenight commit">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/teal/memory.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/memory.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/teal/memory_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/memory_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/teal/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/teal/types.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -93,11 +92,16 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="initial commit" />
     <MESSAGE value="messy commit" />
-    <option name="LAST_COMMIT_MESSAGE" value="messy commit" />
+    <MESSAGE value="latenight commit" />
+    <MESSAGE value="tests are added" />
+    <option name="LAST_COMMIT_MESSAGE" value="tests are added" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="VgoProject">
     <integration-enabled>true</integration-enabled>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/testProject$memory_test_go.out" NAME="memory_test.go Coverage Results" MODIFIED="1607552058895" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="GoCoverage" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" />
   </component>
 </project>

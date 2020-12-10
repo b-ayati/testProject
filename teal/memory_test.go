@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-const DebugMode = true
+const DebugMode = false
 
 func TestMemorySegment_Snapshot(t *testing.T) {
 	var want string
@@ -95,9 +95,45 @@ func TestMemorySegment_Snapshot(t *testing.T) {
 
 }
 
-func TestMemorySegment_Get(t *testing.T) {
-	m := NewMemorySegment(0)
+func TestMemorySegment_AllocateAt(t *testing.T) {
 	var err error
+	m := NewMemorySegment(0)
+
+	err = m.AllocateAt(0, NewUInt(6))
+	if _, ok := err.(*OutOfBoundsError); !ok {
+		t.Errorf("Invalid error in 0 size memory: (%T: %v)", err, err)
+	}
+	m = NewMemorySegment(5)
+	m.DiscardSnapshot()
+	err = m.AllocateAt(5, NewUInt(5))
+	if _, ok := err.(*OutOfBoundsError); !ok {
+		t.Errorf("Invalid error: (%T: %v)", err, err)
+	}
+	want := "Memory Segment: (maxSize:5)"
+	if s := check(m.String(), want, t); s != "pass" {
+		t.Error(s)
+	}
+	m.AllocateAt(2, NewUInt(12))
+	want = "Memory Segment: (maxSize:5)\n[0, <nil>)]---><nil>\n[1, <nil>)]---><nil>\n[2, *teal.UInt)]--->12\n[3, <nil>)]---><nil>\n[4, <nil>)]---><nil>"
+	if s := check(m.String(), want, t); s != "pass" {
+		t.Error(s)
+	}
+	m.DiscardSnapshot()
+	err = m.AllocateAt(2, NewUInt(12))
+	if err != ErrCellNotEmpty {
+		t.Errorf("Invalid error: (%T: %v)", err, err)
+	}
+	m.AllocateAt(0, NewUInt(7))
+	want = "Memory Segment: (maxSize:5)\n[0, *teal.UInt)]--->7\n[1, <nil>)]---><nil>\n[2, *teal.UInt)]--->12"
+	if s := check(m.String(), want, t); s != "pass" {
+		t.Error(s)
+	}
+}
+
+func TestMemorySegment_Get(t *testing.T) {
+	var err error
+	m := NewMemorySegment(0)
+
 	_, err = m.Get(0)
 	if _, ok := err.(*OutOfBoundsError); !ok {
 		t.Errorf("Invalid error in 0 size memory: (%T: %v)", err, err)
@@ -123,7 +159,6 @@ func TestMemorySegment_Get(t *testing.T) {
 	if b, _ := barr.Get(2); b != 12 {
 		t.Errorf("Error in getting values of a ByteArray. we got: %v we wanted %v", b, 12)
 	}
-
 }
 
 func check(got, want string, t *testing.T) string {

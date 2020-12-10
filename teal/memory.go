@@ -10,17 +10,27 @@ var (
 	ErrCellIsEmpty  = errors.New("memory cell is empty")
 )
 
+// MemorySegment represents a fixed size segment of a random access memory which its starting address is 0.
+// Every address can either be empty or contain a teal.DataType.
+// By calling SaveSnapshot() MemorySegment can save a snapshot of its state which can later be restored by calling RestoreSnapshot().
 type MemorySegment struct {
 	segment     []DataType
 	snapManager snapshotManager
 	maxSize     int
 }
 
+// NewMemorySegment creates an empty MemorySegment which its last valid address is size - 1.
 func NewMemorySegment(size int) *MemorySegment {
 	return &MemorySegment{maxSize: size, segment: make([]DataType, size)}
 }
 
+// AllocateAt puts item at the specified position by index. If that position is not empty it will return an error.
+// If the MemorySegment is compacted and the index is outside of the compacted memory, AllocateAt will
+// try to expand the MemorySegment.
 func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
+	if item == nil {
+		panic("input item can't be nil.")
+	}
 	if index < 0 || index >= ms.maxSize {
 		return &OutOfBoundsError{Value: index, LowerBound: 0, HigherBound: ms.maxSize - 1}
 	}
@@ -38,6 +48,7 @@ func (ms *MemorySegment) AllocateAt(index int, item DataType) error {
 	return nil
 }
 
+// Delete deletes any data stored at the specified position by index. it returns an error if that memory location is empty.
 func (ms *MemorySegment) Delete(index int) error {
 	//if Get(index) returns an error we will return an error too
 	if _, err := ms.Get(index); err != nil {
@@ -50,6 +61,7 @@ func (ms *MemorySegment) Delete(index int) error {
 	return nil
 }
 
+// Get retrieves the data stored at the memory position specified by index.
 func (ms *MemorySegment) Get(index int) (DataType, error) {
 	if index < 0 || index >= ms.maxSize {
 		return nil, &OutOfBoundsError{Value: index, LowerBound: 0, HigherBound: ms.maxSize - 1}
@@ -60,12 +72,15 @@ func (ms *MemorySegment) Get(index int) (DataType, error) {
 	return ms.segment[index], nil
 }
 
+// SaveSnapshot saves a snapshot of the current state of MemorySegment. if the MemorySegment is compacted it will
+// expand it to its original size. After calling SaveSnapshot the memory usage of MemorySegment increases
+// and updating
 func (ms *MemorySegment) SaveSnapshot() {
 	ms.snapManager.reset()
 	ms.expand()
 }
 
-//DiscardSnapshot stops the MemorySegment from
+// DiscardSnapshot stops the MemorySegment from
 func (ms *MemorySegment) DiscardSnapshot() {
 	ms.snapManager.turnOff()
 	ms.compact()
@@ -77,6 +92,8 @@ func (ms *MemorySegment) RestoreSnapshot() {
 	ms.snapManager.reset()
 }
 
+//expand expands the memory to its original size. Expanding will cause a runtime error, if there is
+//a non empty saved snapshot in the MemorySegment.
 func (ms *MemorySegment) expand() {
 	if len(ms.segment) == ms.maxSize {
 		return
